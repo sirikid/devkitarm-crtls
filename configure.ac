@@ -1,0 +1,13 @@
+AC_INIT([crtls],[1.1.0])
+
+AM_INIT_AUTOMAKE([foreign subdir-objects])
+
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+
+AM_PROG_AS
+AC_PROG_CC
+AC_PROG_RANLIB
+
+AC_CONFIG_FILES([Makefile gp32/Makefile])
+AC_OUTPUT

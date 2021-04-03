@@ -1,0 +1,3 @@
+SUBDIRS = gp32
+
+ACLOCAL_AMFLAGS = -I m4
