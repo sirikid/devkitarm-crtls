@@ -1,48 +1,36 @@
-_MAJOR  := 1
-_MINOR  := 1
-_PATCH  := 0
+prefix = /usr/arm-none-eabi
+libdir = $(prefix)/lib
 
-include $(DEVKITARM)/base_rules
+sources = $(wildcard *.S)
+objects = $(patsubst %.S, %.arm.o, $(sources)) $(patsubst %.S, %.thumb.o, $(sources))
 
+.PHONY: all clean install
 
-all:	armv6k/fpu thumb \
-	ds_arm7_vram_crt0.o thumb/ds_arm7_vram_crt0.o \
-	ds_arm7_crt0.o thumb/ds_arm7_crt0.o \
-	ds_arm9_crt0.o thumb/ds_arm9_crt0.o \
-	gba_crt0.o thumb/gba_crt0.o \
-	er_crt0.o thumb/er_crt0.o \
-	gp32_crt0.o thumb/gp32_crt0.o \
-	gp32_gpsdk_crt0.o thumb/gp32_gpsdk_crt0.o \
-	armv6k/fpu/3dsx_crt0.o
-
-install: all
-	@mkdir -p $(DESTDIR)/opt/devkitpro/devkitARM/arm-none-eabi/lib
-	@cp -v *.specs *.ld *.mem $(DESTDIR)/opt/devkitpro/devkitARM/arm-none-eabi/lib
-	@cp -rv thumb armv6k *.o $(DESTDIR)/opt/devkitpro/devkitARM/arm-none-eabi/lib
+all: $(objects)
 
 clean:
-	rm -fr thumb armv6k *.o
+	$(RM) $(objects)
 
-armv6k/fpu:
-	@mkdir -p $@
+install:
+	install -D -t $(DESTDIR)$(libdir)/arm/v4t gp32_*.arm.o er_*.arm.o gba_*.arm.o ds_cart_*.arm.o ds_arm7_*.arm.o
+	install -D -t $(DESTDIR)$(libdir)/arm/v5te ds_arm9_*.arm.o
+	install -D -t $(DESTDIR)$(libdir)/thumb/v4t gp32_*.thumb.o er_*.thumb.o gba_*.thumb.o ds_cart_*.thumb.o ds_arm7_*.thumb.o
+	install -D -t $(DESTDIR)$(libdir)/thumb/v5te ds_arm9_*.thumb.o
 
-thumb:
-	@mkdir -p $@
+AS = arm-none-eabi-as
 
-armv6k/fpu/3dsx_crt0.o: 3dsx_crt0.s
-	$(CC) -march=armv6k -mfloat-abi=hard -c $< -o $@
+%.arm.o: %.s
+	$(AS) $(ASFLAGS) -o $@ $<
 
-thumb/%_vram_crt0.o: %_crt0.s
-	$(CC)  -x assembler-with-cpp -DVRAM -mthumb -c $< -o$@
+%.thumb.o: %.s
+	$(AS) $(ASFLAGS) -mthumb -o $@ $<
 
-%_vram_crt0.o: %_crt0.s
-	$(CC)  -x assembler-with-cpp -DVRAM -marm -c $< -o$@
+gp32_%:    ASFLAGS += -mcpu=arm920t
+er_%:      ASFLAGS += -mcpu=arm7tdmi
+gba_%:     ASFLAGS += -mcpu=arm7tdmi
+ds_cart_%: ASFLAGS += -mcpu=arm7tdmi
+ds_arm7_%: ASFLAGS += -mcpu=arm7tdmi
+ds_arm9_%: ASFLAGS += -mcpu=arm946e-s
+3dsx_%:    ASFLAGS += -mcpu=mpcore -mfloat-abi=hard
 
-thumb/%_crt0.o: %_crt0.s
-	$(CC)  -x assembler-with-cpp -mthumb -c $< -o$@
-
-%_crt0.o: %_crt0.s
-	$(CC)  -x assembler-with-cpp -marm -c $< -o$@
-
-dist:
-	@tar -cJf devkitarm-crtls-$(_MAJOR).$(_MINOR).$(_PATCH).tar.xz *.specs *.ld *.mem *.s Makefile
+ds_arm7_vram_%: CPPFLAGS += -DVRAM
